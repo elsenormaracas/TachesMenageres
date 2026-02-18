@@ -80,15 +80,16 @@
     padding: 14px 10px 14px 16px;
     box-shadow: var(--shadow);
     transition: opacity 0.2s, transform 0.2s;
-    touch-action: none;
+    touch-action: pan-y;
   }
   .task-item.done { background: var(--done-bg); border-color: #b5dfc0; opacity: 0.75; }
-  .reorder-btns { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
-  .reorder-btn {
-    width: 28px; height: 22px; border: none; background: var(--bg);
-    border-radius: 6px; color: var(--muted); font-size: 11px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; padding: 0;
+  .drag-handle {
+    color: var(--border); font-size: 20px; cursor: grab; flex-shrink: 0;
+    padding: 2px 4px; user-select: none; -webkit-user-select: none;
+    touch-action: none;
   }
+  .drag-handle:active { cursor: grabbing; color: var(--muted); }
+  .task-item.drag-over { border-color: var(--accent); border-style: dashed; }
   .reorder-btn:active { background: var(--border); color: var(--text); }
   .task-item.dragging { opacity: 0.4; transform: scale(0.98); }
 
@@ -97,6 +98,7 @@
     width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border);
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
     transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); cursor: pointer;
+    touch-action: manipulation;
   }
   .task-item.done .checkbox { background: var(--done); border-color: var(--done); transform: scale(1.05); }
   .checkmark { opacity: 0; transform: scale(0); transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); color: white; font-size: 13px; font-weight: 700; }
@@ -118,6 +120,8 @@
     width: 34px; height: 34px; border-radius: 8px; border: none;
     background: transparent; font-size: 15px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
+    touch-action: manipulation;
+    touch-action: manipulation;
   }
   .task-btn:active { background: var(--bg); transform: scale(0.9); }
 
@@ -383,7 +387,7 @@ function makeTaskEl(task) {
   div.dataset.id = task.id;
 
   div.innerHTML = `
-    <div class="reorder-btns"><button class="reorder-btn" onclick="moveTask(${task.id},-1)">▲</button><button class="reorder-btn" onclick="moveTask(${task.id},1)">▼</button></div>
+    <div class="drag-handle" title="Déplacer">⠿</div>
     <div class="checkbox" onclick="toggle(${task.id})"><span class="checkmark">✓</span></div>
     <div class="task-content" onclick="toggle(${task.id})">
       <div class="task-name">${escHtml(task.name)}</div>
@@ -500,16 +504,6 @@ function addReminder(id) {
    CRUD
 ───────────────────────────────────────── */
 
-function moveTask(id, dir) {
-  const idx = tasks.findIndex(t => t.id === id);
-  if (idx === -1) return;
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= tasks.length) return;
-  const [moved] = tasks.splice(idx, 1);
-  tasks.splice(newIdx, 0, moved);
-  saveTasks();
-  render();
-}
 function deleteTask(id) {
   if (!confirm('Supprimer cette tâche définitivement ?')) return;
   tasks = tasks.filter(t => t.id !== id);
@@ -571,6 +565,109 @@ function resetAll() {
 }
 
 
+
+
+/* ─────────────────────────────────────────
+   DRAG & DROP
+───────────────────────────────────────── */
+function initDragAndDrop() {
+  document.querySelectorAll('.drag-handle').forEach(handle => {
+    handle.addEventListener('mousedown', e => startDrag(e, handle.closest('.task-item')));
+    handle.addEventListener('touchstart', e => startDrag(e, handle.closest('.task-item')), { passive: true });
+  });
+}
+
+let dragEl = null, dragGhost = null, dragOffsetY = 0, dragStartY = 0, dragActive = false;
+const DRAG_THRESHOLD = 10;
+
+function startDrag(e, el) {
+  dragEl = el;
+  dragActive = false;
+  const touch = e.touches ? e.touches[0] : e;
+  dragStartY  = touch.clientY;
+  dragOffsetY = touch.clientY - el.getBoundingClientRect().top;
+
+  dragGhost = el.cloneNode(true);
+  dragGhost.style.cssText = `
+    position: fixed; left: ${el.getBoundingClientRect().left}px;
+    width: ${el.offsetWidth}px; opacity: 0.85; pointer-events: none;
+    z-index: 999; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    background: var(--surface); transition: none; display: none;
+  `;
+  document.body.appendChild(dragGhost);
+
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup', onDragEnd);
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
+  document.addEventListener('touchend', onDragEnd);
+}
+
+function activateDrag(clientY) {
+  dragActive = true;
+  dragGhost.style.display = '';
+  dragGhost.style.top = (clientY - dragOffsetY) + 'px';
+  dragEl.classList.add('dragging');
+}
+
+function onTouchMove(e) {
+  if (!dragEl) return;
+  const touch = e.touches[0];
+  const dy = Math.abs(touch.clientY - dragStartY);
+  if (!dragActive && dy < DRAG_THRESHOLD) {
+    // Not yet a drag — but we registered passive:false so we must not call preventDefault
+    // Just return and let iOS handle it (pan-y on .task-item will allow scroll)
+    return;
+  }
+  if (!dragActive) activateDrag(touch.clientY);
+  e.preventDefault();
+  moveDrag(touch.clientX, touch.clientY);
+}
+
+function onDragMove(e) {
+  if (!dragEl || !dragActive) return;
+  moveDrag(e.clientX, e.clientY);
+}
+
+function moveDrag(x, y) {
+  if (dragGhost) dragGhost.style.top = (y - dragOffsetY) + 'px';
+  document.querySelectorAll('.task-item').forEach(i => i.classList.remove('drag-over'));
+  const target = getDropTarget(x, y);
+  if (target && target !== dragEl) target.classList.add('drag-over');
+}
+
+function onDragEnd(e) {
+  if (!dragEl) return;
+  const touch = e.changedTouches ? e.changedTouches[0] : e;
+
+  if (dragActive) {
+    const target = getDropTarget(touch.clientX, touch.clientY);
+    if (target && target !== dragEl) {
+      const fromIdx = tasks.findIndex(t => t.id === parseInt(dragEl.dataset.id));
+      const toIdx   = tasks.findIndex(t => t.id === parseInt(target.dataset.id));
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const [moved] = tasks.splice(fromIdx, 1);
+        tasks.splice(toIdx, 0, moved);
+        saveTasks();
+      }
+    }
+  }
+
+  document.querySelectorAll('.task-item').forEach(i => i.classList.remove('drag-over', 'dragging'));
+  if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+  dragEl = null; dragActive = false;
+
+  document.removeEventListener('mousemove', onDragMove);
+  document.removeEventListener('mouseup', onDragEnd);
+  document.removeEventListener('touchmove', onTouchMove);
+  document.removeEventListener('touchend', onDragEnd);
+
+  render();
+}
+
+function getDropTarget(x, y) {
+  const els = document.elementsFromPoint(x, y);
+  return els.find(el => el.classList.contains('task-item') && el !== dragGhost) || null;
+}
 
 /* ─────────────────────────────────────────
    INIT
