@@ -29,109 +29,104 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding-bottom: 200px;
+    padding-bottom: 210px;
   }
 
+  /* ── Header ── */
   .header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     padding: 20px 20px 16px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    position: sticky; top: 0; z-index: 100;
     box-shadow: var(--shadow);
   }
-
-  .header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 14px;
-  }
-
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
   .header h1 { font-family: 'DM Serif Display', serif; font-size: 26px; line-height: 1.1; }
   .header h1 span { font-style: italic; color: var(--accent-dark); }
   .date-label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
-
   .header-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-
   .icon-btn {
-    background: none;
-    border: 1.5px solid var(--border);
-    border-radius: 20px;
-    padding: 6px 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--muted);
-    cursor: pointer;
+    background: none; border: 1.5px solid var(--border); border-radius: 20px;
+    padding: 6px 12px; font-family: 'DM Sans', sans-serif; font-size: 12px;
+    font-weight: 500; color: var(--muted); cursor: pointer;
   }
   .icon-btn.primary { background: var(--accent-dark); border-color: var(--accent-dark); color: white; }
   .icon-btn:active { opacity: 0.7; }
 
   .progress-wrap { display: flex; align-items: center; gap: 10px; }
   .progress-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
-  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--done)); border-radius: 99px; transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); width: 0%; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--done)); border-radius: 99px; transition: width 0.4s cubic-bezier(0.34,1.56,0.64,1); width: 0%; }
   .progress-label { font-size: 12px; font-weight: 600; color: var(--muted); min-width: 36px; text-align: right; }
-
   .time-info { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
   .time-chip { font-size: 11px; font-weight: 500; color: var(--muted); }
   .time-chip strong { color: var(--text); font-weight: 600; }
 
+  /* ── Task list ── */
   .task-list { padding: 16px 16px 0; display: flex; flex-direction: column; gap: 8px; }
+
+  .location-group { margin-bottom: 4px; }
+  .location-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); padding: 8px 4px 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .location-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
   .task-item {
     background: var(--surface);
     border: 1.5px solid var(--border);
     border-radius: 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    display: flex; align-items: center; gap: 12px;
     padding: 14px 10px 14px 16px;
     box-shadow: var(--shadow);
-    transition: all 0.2s;
+    transition: opacity 0.2s, transform 0.2s;
+    touch-action: none;
   }
-  .task-item.done { background: var(--done-bg); border-color: #b5dfc0; }
+  .task-item.done { background: var(--done-bg); border-color: #b5dfc0; opacity: 0.75; }
+  .task-item.dragging { opacity: 0.4; transform: scale(0.98); }
+  .task-item.drag-over { border-color: var(--accent); border-style: dashed; }
+
+  .drag-handle {
+    color: var(--border); font-size: 18px; cursor: grab; flex-shrink: 0;
+    padding: 2px 4px; user-select: none; -webkit-user-select: none;
+    touch-action: none;
+  }
+  .drag-handle:active { cursor: grabbing; }
 
   .checkbox {
-    width: 26px; height: 26px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-    cursor: pointer;
+    width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); cursor: pointer;
   }
   .task-item.done .checkbox { background: var(--done); border-color: var(--done); transform: scale(1.05); }
-  .checkmark { opacity: 0; transform: scale(0); transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); color: white; font-size: 13px; font-weight: 700; }
+  .checkmark { opacity: 0; transform: scale(0); transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); color: white; font-size: 13px; font-weight: 700; }
   .task-item.done .checkmark { opacity: 1; transform: scale(1); }
 
   .task-content { flex: 1; cursor: pointer; min-width: 0; }
   .task-name { font-size: 15px; font-weight: 500; color: var(--text); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .task-item.done .task-name { color: var(--muted); text-decoration: line-through; text-decoration-color: #b5dfc0; }
-  .task-duration { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .task-meta { display: flex; gap: 8px; align-items: center; margin-top: 2px; flex-wrap: wrap; }
+  .task-duration { font-size: 12px; color: var(--muted); }
+  .task-location-badge {
+    font-size: 10px; font-weight: 600; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 99px;
+    padding: 1px 7px; color: var(--muted);
+  }
 
   .task-actions { display: flex; gap: 2px; flex-shrink: 0; }
   .task-btn {
-    width: 34px; height: 34px;
-    border-radius: 8px;
-    border: none;
-    background: transparent;
-    font-size: 16px;
-    cursor: pointer;
+    width: 34px; height: 34px; border-radius: 8px; border: none;
+    background: transparent; font-size: 15px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
   .task-btn:active { background: var(--bg); transform: scale(0.9); }
 
-  /* Summary */
+  /* ── Summary bar ── */
   .summary-bar {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: var(--surface);
-    border-top: 1.5px solid var(--border);
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1.5px solid var(--border);
     padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
-    box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
-    z-index: 200;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.08); z-index: 200;
   }
   .summary-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; }
   .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
@@ -141,63 +136,42 @@
   .summary-card.remain-card .val { color: var(--accent-dark); }
   .summary-card .lbl { font-size: 10px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
 
-  /* Modal */
+  /* ── Modal ── */
   .modal-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.45);
-    z-index: 400;
-    align-items: flex-end;
-    backdrop-filter: blur(4px);
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 400;
+    align-items: flex-end; backdrop-filter: blur(4px);
   }
   .modal-overlay.show { display: flex; }
-
   .modal {
-    background: var(--surface);
-    border-radius: 24px 24px 0 0;
+    background: var(--surface); border-radius: 24px 24px 0 0;
     padding: 28px 20px calc(28px + env(safe-area-inset-bottom));
-    width: 100%;
-    animation: slideUp 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+    width: 100%; animation: slideUp 0.3s cubic-bezier(0.34,1.2,0.64,1);
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
   .modal h2 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 20px; }
   .modal label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; display: block; margin-bottom: 6px; }
   .modal input {
-    width: 100%;
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    padding: 13px 14px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    color: var(--text);
-    background: var(--bg);
-    margin-bottom: 16px;
-    outline: none;
+    width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 13px 14px; font-family: 'DM Sans', sans-serif; font-size: 16px;
+    color: var(--text); background: var(--bg); margin-bottom: 16px; outline: none;
   }
   .modal input:focus { border-color: var(--accent); }
   .modal-btns { display: flex; gap: 10px; margin-top: 4px; }
   .modal-btn {
-    flex: 1; padding: 14px;
-    border-radius: 12px; border: none;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px; font-weight: 600;
-    cursor: pointer;
+    flex: 1; padding: 14px; border-radius: 12px; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer;
   }
   .modal-btn.cancel { background: var(--bg); color: var(--muted); }
   .modal-btn.confirm { background: var(--accent-dark); color: white; }
   .modal-btn:active { opacity: 0.8; }
 
-  /* All done */
+  /* ── All done ── */
   .all-done {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(106, 171, 126, 0.97);
-    z-index: 500;
-    flex-direction: column;
-    align-items: center; justify-content: center;
-    text-align: center; padding: 40px;
-    animation: fadeIn 0.4s ease;
+    display: none; position: fixed; inset: 0;
+    background: rgba(106,171,126,0.97); z-index: 500;
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 40px; animation: fadeIn 0.4s ease;
   }
   @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
   .all-done.show { display: flex; }
@@ -205,9 +179,16 @@
   .all-done h2 { font-family: 'DM Serif Display', serif; font-size: 32px; color: white; margin-bottom: 8px; }
   .all-done p { font-size: 16px; color: rgba(255,255,255,0.85); margin-bottom: 32px; }
   .all-done button { background: white; color: var(--done); border: none; border-radius: 99px; padding: 14px 32px; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; }
+
+  /* ── Confetti canvas ── */
+  #confetti-canvas {
+    position: fixed; inset: 0; pointer-events: none; z-index: 450;
+  }
 </style>
 </head>
 <body>
+
+<canvas id="confetti-canvas"></canvas>
 
 <div class="header">
   <div class="header-top">
@@ -242,7 +223,7 @@
   </div>
 </div>
 
-<!-- Modal -->
+<!-- Modal ajout/édition -->
 <div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
   <div class="modal">
     <h2 id="modalTitle">Nouvelle tâche</h2>
@@ -250,6 +231,9 @@
     <input type="text" id="inputName" placeholder="Ex: Nettoyer le four" autocomplete="off" />
     <label>Durée (minutes)</label>
     <input type="number" id="inputDuration" placeholder="Ex: 10" min="1" />
+    <label>Lieu (optionnel)</label>
+    <input type="text" id="inputLocation" placeholder="Ex: Cuisine, Salle de bain…" autocomplete="off" list="locationSuggestions" />
+    <datalist id="locationSuggestions"></datalist>
     <div class="modal-btns">
       <button class="modal-btn cancel" onclick="closeModal()">Annuler</button>
       <button class="modal-btn confirm" onclick="saveTask()">Enregistrer</button>
@@ -266,25 +250,28 @@
 </div>
 
 <script>
+/* ─────────────────────────────────────────
+   DATA
+───────────────────────────────────────── */
 const DEFAULT_TASKS = [
-  { name: "Laver évier intérieur", duration: 3 },
-  { name: "Laver îlot et plaque", duration: 7 },
-  { name: "Lavabos", duration: 10 },
-  { name: "Aspirateur entrée et pièce principale", duration: 6 },
-  { name: "Laver WC", duration: 5 },
-  { name: "Vider lave-vaisselle", duration: 4 },
-  { name: "Nettoyer filtre lave-vaisselle", duration: 4 },
-  { name: "Laver une voiture", duration: 25 },
-  { name: "Étendre machine", duration: 10 },
-  { name: "Ranger linge", duration: 2 },
-  { name: "Trier linge pour machine", duration: 2 },
-  { name: "Dépendre linge sec", duration: 5 },
-  { name: "Préparer petit-déjeuner du lendemain", duration: 3 },
-  { name: "Miroir entrée", duration: 7 },
-  { name: "Vider bonde douche", duration: 10 },
+  { name: "Laver évier intérieur",              duration: 3,  location: "Cuisine" },
+  { name: "Laver îlot et plaque",               duration: 7,  location: "Cuisine" },
+  { name: "Vider lave-vaisselle",               duration: 4,  location: "Cuisine" },
+  { name: "Nettoyer filtre lave-vaisselle",     duration: 4,  location: "Cuisine" },
+  { name: "Préparer petit-déjeuner du lendemain", duration: 3, location: "Cuisine" },
+  { name: "Lavabos",                            duration: 10, location: "Salle de bain" },
+  { name: "Vider bonde douche",                 duration: 10, location: "Salle de bain" },
+  { name: "Laver WC",                           duration: 5,  location: "WC" },
+  { name: "Aspirateur entrée et pièce principale", duration: 6, location: "Salon" },
+  { name: "Miroir entrée",                      duration: 7,  location: "Entrée" },
+  { name: "Laver une voiture",                  duration: 25, location: "Extérieur" },
+  { name: "Étendre machine",                    duration: 10, location: "" },
+  { name: "Ranger linge",                       duration: 2,  location: "" },
+  { name: "Trier linge pour machine",           duration: 2,  location: "" },
+  { name: "Dépendre linge sec",                 duration: 5,  location: "" },
 ];
 
-const TASKS_KEY = 'menage_tasks_v2';
+const TASKS_KEY = 'menage_tasks_v3';
 const STATE_KEY = 'menage_state_' + getTodayKey();
 
 function getTodayKey() {
@@ -295,85 +282,223 @@ function getTodayKey() {
 function loadTasks() {
   try {
     const s = localStorage.getItem(TASKS_KEY);
-    return s ? JSON.parse(s) : DEFAULT_TASKS.map((t, i) => ({ ...t, id: i + 1 }));
-  } catch(e) {
+    if (s) return JSON.parse(s);
     return DEFAULT_TASKS.map((t, i) => ({ ...t, id: i + 1 }));
-  }
+  } catch(e) { return DEFAULT_TASKS.map((t, i) => ({ ...t, id: i + 1 })); }
 }
-
 function saveTasks() { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); }
 
 function loadState() {
   try { const s = localStorage.getItem(STATE_KEY); return s ? JSON.parse(s) : {}; }
   catch(e) { return {}; }
 }
-
 function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
 
 let tasks = loadTasks();
 let state = loadState();
 let editingId = null;
 
+/* ─────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────── */
 function formatMin(m) {
-  if (!m) return '0 min';
+  if (!m && m !== 0) return '—';
   if (m < 60) return m + ' min';
   const h = Math.floor(m / 60), r = m % 60;
   return r ? `${h}h${String(r).padStart(2,'0')}` : `${h}h`;
 }
 
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getLocations() {
+  const locs = [...new Set(tasks.map(t => t.location).filter(Boolean))];
+  return locs.sort();
+}
+
+function updateLocationSuggestions() {
+  const dl = document.getElementById('locationSuggestions');
+  dl.innerHTML = getLocations().map(l => `<option value="${escHtml(l)}">`).join('');
+}
+
+/* ─────────────────────────────────────────
+   RENDER
+───────────────────────────────────────── */
 function render() {
   const list = document.getElementById('taskList');
   list.innerHTML = '';
-  tasks.forEach(task => {
-    const done = !!state[task.id];
-    const div = document.createElement('div');
-    div.className = 'task-item' + (done ? ' done' : '');
-    div.innerHTML = `
-      <div class="checkbox" onclick="toggle(${task.id})"><span class="checkmark">✓</span></div>
-      <div class="task-content" onclick="toggle(${task.id})">
-        <div class="task-name">${escHtml(task.name)}</div>
-        <div class="task-duration">⏱ ${formatMin(task.duration)}</div>
-      </div>
-      <div class="task-actions">
-        <button class="task-btn" onclick="openEditModal(${task.id})" title="Modifier">✏️</button>
-        <button class="task-btn" onclick="deleteTask(${task.id})" title="Supprimer">🗑️</button>
-      </div>
-    `;
-    list.appendChild(div);
+
+  // Split done / not done
+  const pending = tasks.filter(t => !state[t.id]);
+  const done    = tasks.filter(t =>  state[t.id]);
+
+  // Group pending by location
+  const groups = {};
+  const noLoc  = [];
+  pending.forEach(t => {
+    if (t.location) {
+      if (!groups[t.location]) groups[t.location] = [];
+      groups[t.location].push(t);
+    } else {
+      noLoc.push(t);
+    }
   });
-  updateStats();
-}
 
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+  // Render pending grouped
+  const sortedLocs = Object.keys(groups).sort();
+  sortedLocs.forEach(loc => {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'location-group';
+    const label = document.createElement('div');
+    label.className = 'location-label';
+    label.textContent = loc;
+    groupDiv.appendChild(label);
+    groups[loc].forEach(t => groupDiv.appendChild(makeTaskEl(t)));
+    list.appendChild(groupDiv);
+  });
+  noLoc.forEach(t => list.appendChild(makeTaskEl(t)));
 
-function toggle(id) {
-  state[id] = !state[id];
-  saveState();
-  render();
-  if (tasks.length > 0 && tasks.every(t => state[t.id])) {
-    setTimeout(() => document.getElementById('allDone').classList.add('show'), 400);
+  // Render done tasks at bottom
+  if (done.length > 0) {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'location-group';
+    const label = document.createElement('div');
+    label.className = 'location-label';
+    label.textContent = '✓ Terminées';
+    groupDiv.appendChild(label);
+    done.forEach(t => groupDiv.appendChild(makeTaskEl(t)));
+    list.appendChild(groupDiv);
   }
+
+  updateStats();
+  updateLocationSuggestions();
+  initDragAndDrop();
 }
 
+function makeTaskEl(task) {
+  const done = !!state[task.id];
+  const div = document.createElement('div');
+  div.className = 'task-item' + (done ? ' done' : '');
+  div.dataset.id = task.id;
+
+  div.innerHTML = `
+    <div class="drag-handle" title="Déplacer">⠿</div>
+    <div class="checkbox" onclick="toggle(${task.id})"><span class="checkmark">✓</span></div>
+    <div class="task-content" onclick="toggle(${task.id})">
+      <div class="task-name">${escHtml(task.name)}</div>
+      <div class="task-meta">
+        <span class="task-duration">⏱ ${formatMin(task.duration)}</span>
+        ${task.location ? `<span class="task-location-badge">📍 ${escHtml(task.location)}</span>` : ''}
+      </div>
+    </div>
+    <div class="task-actions">
+      <button class="task-btn" onclick="addReminder(${task.id})" title="Rappel Siri">🔔</button>
+      <button class="task-btn" onclick="openEditModal(${task.id})" title="Modifier">✏️</button>
+      <button class="task-btn" onclick="deleteTask(${task.id})" title="Supprimer">🗑️</button>
+    </div>
+  `;
+  return div;
+}
+
+/* ─────────────────────────────────────────
+   STATS
+───────────────────────────────────────── */
 function updateStats() {
-  const total = tasks.length;
+  const total    = tasks.length;
   const totalMin = tasks.reduce((s, t) => s + t.duration, 0);
   const doneCount = tasks.filter(t => state[t.id]).length;
-  const doneMin = tasks.reduce((s, t) => s + (state[t.id] ? t.duration : 0), 0);
-  const pct = total === 0 ? 0 : Math.round(doneCount / total * 100);
+  const doneMin  = tasks.reduce((s, t) => s + (state[t.id] ? t.duration : 0), 0);
+  const pct      = total === 0 ? 0 : Math.round(doneCount / total * 100);
 
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('progressLabel').textContent = pct + '%';
-  document.getElementById('totalTime').textContent = formatMin(totalMin);
-  document.getElementById('doneTime').textContent = formatMin(doneMin);
+  document.getElementById('totalTime').textContent  = formatMin(totalMin);
+  document.getElementById('doneTime').textContent   = formatMin(doneMin);
   document.getElementById('remainTime').textContent = formatMin(totalMin - doneMin);
-  document.getElementById('sumDone').textContent = doneCount;
-  document.getElementById('sumRemain').textContent = total - doneCount;
-  document.getElementById('sumTotal').textContent = total;
+  document.getElementById('sumDone').textContent    = doneCount;
+  document.getElementById('sumRemain').textContent  = total - doneCount;
+  document.getElementById('sumTotal').textContent   = total;
 }
 
+/* ─────────────────────────────────────────
+   TOGGLE + CONFETTI
+───────────────────────────────────────── */
+function toggle(id) {
+  const wasUndone = !state[id];
+  state[id] = !state[id];
+  saveState();
+  render();
+  if (wasUndone) launchConfetti();
+  if (tasks.length > 0 && tasks.every(t => state[t.id])) {
+    setTimeout(() => document.getElementById('allDone').classList.add('show'), 600);
+  }
+}
+
+/* ─────────────────────────────────────────
+   CONFETTI
+───────────────────────────────────────── */
+const canvas = document.getElementById('confetti-canvas');
+const ctx = canvas.getContext('2d');
+let confettiParticles = [];
+let animFrame = null;
+
+function launchConfetti() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colors = ['#c8a96e','#6aab7e','#e07070','#7eb8d4','#b49fcc','#f5c842'];
+  for (let i = 0; i < 80; i++) {
+    confettiParticles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height * 0.4,
+      r: Math.random() * 7 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 4,
+      vy: Math.random() * 3 + 2,
+      angle: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.2,
+      life: 1,
+    });
+  }
+  if (animFrame) cancelAnimationFrame(animFrame);
+  animateConfetti();
+}
+
+function animateConfetti() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  confettiParticles = confettiParticles.filter(p => p.life > 0);
+  confettiParticles.forEach(p => {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.1;
+    p.angle += p.spin; p.life -= 0.012;
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.angle);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+    ctx.restore();
+  });
+  if (confettiParticles.length > 0) {
+    animFrame = requestAnimationFrame(animateConfetti);
+  } else {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+/* ─────────────────────────────────────────
+   SIRI REMINDER
+───────────────────────────────────────── */
+function addReminder(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  const name = encodeURIComponent(task.name);
+  // Calls the Siri Shortcut named "Ajouter rappel ménage" with the task name as input
+  window.location.href = `shortcuts://run-shortcut?name=Ajouter%20rappel%20m%C3%A9nage&input=text&text=${name}`;
+}
+
+/* ─────────────────────────────────────────
+   CRUD
+───────────────────────────────────────── */
 function deleteTask(id) {
   if (!confirm('Supprimer cette tâche définitivement ?')) return;
   tasks = tasks.filter(t => t.id !== id);
@@ -386,6 +511,7 @@ function openAddModal() {
   document.getElementById('modalTitle').textContent = 'Nouvelle tâche';
   document.getElementById('inputName').value = '';
   document.getElementById('inputDuration').value = '';
+  document.getElementById('inputLocation').value = '';
   document.getElementById('modalOverlay').classList.add('show');
   setTimeout(() => document.getElementById('inputName').focus(), 350);
 }
@@ -396,6 +522,7 @@ function openEditModal(id) {
   document.getElementById('modalTitle').textContent = 'Modifier la tâche';
   document.getElementById('inputName').value = task.name;
   document.getElementById('inputDuration').value = task.duration;
+  document.getElementById('inputLocation').value = task.location || '';
   document.getElementById('modalOverlay').classList.add('show');
   setTimeout(() => document.getElementById('inputName').focus(), 350);
 }
@@ -410,16 +537,18 @@ function handleOverlayClick(e) {
 }
 
 function saveTask() {
-  const name = document.getElementById('inputName').value.trim();
+  const name     = document.getElementById('inputName').value.trim();
   const duration = parseInt(document.getElementById('inputDuration').value);
-  if (!name) { document.getElementById('inputName').focus(); return; }
+  const location = document.getElementById('inputLocation').value.trim();
+
+  if (!name)              { document.getElementById('inputName').focus(); return; }
   if (!duration || duration < 1) { document.getElementById('inputDuration').focus(); return; }
 
   if (editingId !== null) {
     const task = tasks.find(t => t.id === editingId);
-    if (task) { task.name = name; task.duration = duration; }
+    if (task) { task.name = name; task.duration = duration; task.location = location; }
   } else {
-    tasks.push({ id: Date.now(), name, duration });
+    tasks.push({ id: Date.now(), name, duration, location });
   }
 
   saveTasks(); closeModal(); render();
@@ -430,10 +559,103 @@ function resetAll() {
   state = {}; saveState(); render();
 }
 
-// Date
+/* ─────────────────────────────────────────
+   DRAG & DROP (touch + mouse)
+───────────────────────────────────────── */
+function initDragAndDrop() {
+  const items = document.querySelectorAll('.task-item');
+  items.forEach(item => {
+    const handle = item.querySelector('.drag-handle');
+    if (!handle) return;
+
+    // Mouse
+    handle.addEventListener('mousedown', e => startDrag(e, item));
+    // Touch
+    handle.addEventListener('touchstart', e => startDrag(e, item), { passive: true });
+  });
+}
+
+let dragEl = null, dragGhost = null, dragStartY = 0, dragOffsetY = 0;
+
+function startDrag(e, el) {
+  dragEl = el;
+  const touch = e.touches ? e.touches[0] : e;
+  dragStartY   = touch.clientY;
+  dragOffsetY  = touch.clientY - el.getBoundingClientRect().top;
+
+  dragGhost = el.cloneNode(true);
+  dragGhost.style.cssText = `
+    position: fixed; left: ${el.getBoundingClientRect().left}px;
+    width: ${el.offsetWidth}px; opacity: 0.85; pointer-events: none;
+    z-index: 999; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    background: var(--surface); transition: none;
+  `;
+  document.body.appendChild(dragGhost);
+  positionGhost(touch.clientY);
+
+  el.classList.add('dragging');
+
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup',   onDragEnd);
+  document.addEventListener('touchmove', onDragMove, { passive: false });
+  document.addEventListener('touchend',  onDragEnd);
+}
+
+function positionGhost(clientY) {
+  if (dragGhost) dragGhost.style.top = (clientY - dragOffsetY) + 'px';
+}
+
+function onDragMove(e) {
+  if (!dragEl) return;
+  if (e.cancelable) e.preventDefault();
+  const touch = e.touches ? e.touches[0] : e;
+  positionGhost(touch.clientY);
+
+  // Find target
+  document.querySelectorAll('.task-item').forEach(item => item.classList.remove('drag-over'));
+  const target = getDragTarget(touch.clientX, touch.clientY);
+  if (target && target !== dragEl) target.classList.add('drag-over');
+}
+
+function onDragEnd(e) {
+  if (!dragEl) return;
+  const touch = e.changedTouches ? e.changedTouches[0] : e;
+  const target = getDragTarget(touch.clientX, touch.clientY);
+
+  if (target && target !== dragEl) {
+    const dragId   = parseInt(dragEl.dataset.id);
+    const targetId = parseInt(target.dataset.id);
+    const fromIdx  = tasks.findIndex(t => t.id === dragId);
+    const toIdx    = tasks.findIndex(t => t.id === targetId);
+    if (fromIdx !== -1 && toIdx !== -1) {
+      const [moved] = tasks.splice(fromIdx, 1);
+      tasks.splice(toIdx, 0, moved);
+      saveTasks();
+    }
+  }
+
+  document.querySelectorAll('.task-item').forEach(i => i.classList.remove('drag-over', 'dragging'));
+  if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+  dragEl = null;
+
+  document.removeEventListener('mousemove', onDragMove);
+  document.removeEventListener('mouseup',   onDragEnd);
+  document.removeEventListener('touchmove', onDragMove);
+  document.removeEventListener('touchend',  onDragEnd);
+
+  render();
+}
+
+function getDragTarget(x, y) {
+  const els = document.elementsFromPoint(x, y);
+  return els.find(el => el.classList.contains('task-item') && el !== dragGhost) || null;
+}
+
+/* ─────────────────────────────────────────
+   INIT
+───────────────────────────────────────── */
 const d = new Date();
 document.getElementById('dateLabel').textContent = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
 render();
 </script>
 </body>
