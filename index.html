@@ -22,6 +22,21 @@
     --shadow: 0 2px 12px rgba(0,0,0,0.06);
   }
 
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1712;
+      --surface: #232018;
+      --text: #f0ebe0;
+      --muted: #7a7060;
+      --accent: #c8a96e;
+      --accent-dark: #d4a96e;
+      --done: #6aab7e;
+      --done-bg: #1a2e20;
+      --border: #3a3328;
+      --shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   body {
@@ -384,10 +399,10 @@ function makeTaskEl(task) {
   div.innerHTML = `
     <div class="reorder-btns"><button class="reorder-btn" onclick="moveTask(${task.id},-1)">▲</button><button class="reorder-btn" onclick="moveTask(${task.id},1)">▼</button></div>
     <div class="checkbox" onclick="toggle(${task.id})"><span class="checkmark">✓</span></div>
-    <div class="task-content" onclick="toggle(${task.id})">
-      <div class="task-name">${escHtml(task.name)}</div>
+    <div class="task-content">
+      <div class="task-name" onclick="toggle(${task.id})">${escHtml(task.name)}</div>
       <div class="task-bottom">
-        <span class="task-duration">⏱ ${formatMin(task.duration)}</span>
+        <span class="task-duration" onclick="toggle(${task.id})">⏱ ${formatMin(task.duration)}</span>
         <div class="task-actions">
           <button class="task-btn" onclick="addReminder(${task.id})" title="Rappel Siri">🔔</button>
           <button class="task-btn" onclick="openEditModal(${task.id})" title="Modifier">✏️</button>
