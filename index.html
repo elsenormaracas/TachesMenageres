@@ -572,13 +572,21 @@ function resetAll() {
 ───────────────────────────────────────── */
 function initDragAndDrop() {
   document.querySelectorAll('.drag-handle').forEach(handle => {
-    handle.addEventListener('mousedown', e => startDrag(e, handle.closest('.task-item')));
-    handle.addEventListener('touchstart', e => startDrag(e, handle.closest('.task-item')), { passive: true });
+    // Clone to remove old listeners
+    const newHandle = handle.cloneNode(true);
+    handle.parentNode.replaceChild(newHandle, handle);
+
+    newHandle.addEventListener('mousedown', e => startDrag(e, newHandle.closest('.task-item')));
+
+    // Register touchstart as passive:false on the handle itself so iOS respects preventDefault in touchmove
+    newHandle.addEventListener('touchstart', e => {
+      startDrag(e, newHandle.closest('.task-item'));
+    }, { passive: false });
   });
 }
 
 let dragEl = null, dragGhost = null, dragOffsetY = 0, dragStartY = 0, dragActive = false;
-const DRAG_THRESHOLD = 10;
+const DRAG_THRESHOLD = 6;
 
 function startDrag(e, el) {
   dragEl = el;
@@ -613,12 +621,14 @@ function onTouchMove(e) {
   if (!dragEl) return;
   const touch = e.touches[0];
   const dy = Math.abs(touch.clientY - dragStartY);
-  if (!dragActive && dy < DRAG_THRESHOLD) {
-    // Not yet a drag — but we registered passive:false so we must not call preventDefault
-    // Just return and let iOS handle it (pan-y on .task-item will allow scroll)
-    return;
+  if (!dragActive) {
+    if (dy < DRAG_THRESHOLD) {
+      // Small movement: let iOS scroll freely
+      return;
+    }
+    activateDrag(touch.clientY);
   }
-  if (!dragActive) activateDrag(touch.clientY);
+  // Drag is active: block scroll
   e.preventDefault();
   moveDrag(touch.clientX, touch.clientY);
 }
