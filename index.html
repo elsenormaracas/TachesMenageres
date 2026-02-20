@@ -727,8 +727,10 @@ function saveTask() {
 }
 
 function resetAll() {
-  if (!confirm('Réinitialiser toutes les coches du jour ?')) return;
-  state = {}; saveState(); render();
+  if (!confirm('Réinitialiser toutes les tâches ?')) return;
+  state = {}; saveState();
+  recur = {}; saveRecur();
+  render();
 }
 
 
