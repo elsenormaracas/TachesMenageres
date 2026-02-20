@@ -81,7 +81,7 @@
   /* ── Task list ── */
   .task-list { padding: 16px 16px 0; display: flex; flex-direction: column; gap: 8px; }
 
-  .location-group { margin-bottom: 4px; }
+  .location-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
   .location-label {
     font-size: 11px; font-weight: 600; text-transform: uppercase;
     letter-spacing: 0.1em; color: var(--muted); padding: 8px 4px 4px;
@@ -274,6 +274,18 @@
   </div>
 </div>
 
+<!-- Reset confirmation -->
+<div class="modal-overlay" id="resetOverlay">
+  <div class="modal">
+    <h2>Réinitialiser ?</h2>
+    <p style="color:var(--muted);font-size:15px;margin-bottom:24px;">Toutes les tâches cochées et repoussées reviendront dans la liste.</p>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="cancelReset()">Annuler</button>
+      <button class="modal-btn confirm" onclick="confirmReset()">Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
 <!-- Snooze modal -->
 <div class="modal-overlay" id="snoozeOverlay" onclick="if(event.target===this)closeSnoozeModal()">
   <div class="modal">
@@ -300,36 +312,44 @@
 </div>
 
 <script>
-/* ─────────────────────────────────────────
-   DATA
-───────────────────────────────────────── */
-const DEFAULT_TASKS = [
-  { name: "Laver évier intérieur",              duration: 3,  location: "Cuisine" },
-  { name: "Laver îlot et plaque",               duration: 7,  location: "Cuisine" },
-  { name: "Vider lave-vaisselle",               duration: 4,  location: "Cuisine" },
-  { name: "Nettoyer filtre lave-vaisselle",     duration: 4,  location: "Cuisine" },
-  { name: "Préparer petit-déjeuner du lendemain", duration: 3, location: "Cuisine" },
-  { name: "Lavabos",                            duration: 10, location: "Salle de bain" },
-  { name: "Vider bonde douche",                 duration: 10, location: "Salle de bain" },
-  { name: "Laver WC",                           duration: 5,  location: "WC" },
-  { name: "Aspirateur entrée et pièce principale", duration: 6, location: "Salon" },
-  { name: "Miroir entrée",                      duration: 7,  location: "Entrée" },
-  { name: "Laver une voiture",                  duration: 25, location: "Extérieur" },
-  { name: "Étendre machine",                    duration: 10, location: "" },
-  { name: "Ranger linge",                       duration: 2,  location: "" },
-  { name: "Trier linge pour machine",           duration: 2,  location: "" },
-  { name: "Dépendre linge sec",                 duration: 5,  location: "" },
-];
-
+/* ══════════════════════════════════════════
+   CONSTANTES
+══════════════════════════════════════════ */
 const TASKS_KEY = 'menage_tasks_v4';
-const STATE_KEY  = 'menage_state_' + getTodayKey();
-const RECUR_KEY  = 'menage_recur_v4';
+const RECUR_KEY = 'menage_recur_v4';
 
 function getTodayKey() {
   const d = new Date();
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  return d.toISOString().split('T')[0]; // YYYY-MM-DD
+}
+const STATE_KEY = 'menage_state_' + getTodayKey();
+
+/* ══════════════════════════════════════════
+   UTILITAIRES DATE
+══════════════════════════════════════════ */
+function today() {
+  const d = new Date(); d.setHours(0,0,0,0); return d;
 }
 
+// Retourne une string YYYY-MM-DD
+function dateKey(d) {
+  return d.toISOString().split('T')[0];
+}
+
+// Ajoute n jours à une date
+function addDays(d, n) {
+  const r = new Date(d); r.setDate(r.getDate() + n); return r;
+}
+
+// Parse une string YYYY-MM-DD en Date locale (compatible Safari)
+function parseDate(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/* ══════════════════════════════════════════
+   STOCKAGE
+══════════════════════════════════════════ */
 function loadTasks() {
   try {
     const s = localStorage.getItem(TASKS_KEY);
@@ -345,85 +365,98 @@ function loadState() {
 }
 function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
 
+// recur : { [taskId]: { nextDate: "YYYY-MM-DD" } }
 function loadRecur() {
   try { const s = localStorage.getItem(RECUR_KEY); return s ? JSON.parse(s) : {}; }
   catch(e) { return {}; }
 }
 function saveRecur() { localStorage.setItem(RECUR_KEY, JSON.stringify(recur)); }
 
-function today() {
-  const d = new Date(); d.setHours(0,0,0,0); return d;
-}
-function dateKey(d) {
-  // Use ISO format (YYYY-MM-DD) — required for reliable parsing in Safari
-  return d.toISOString().split('T')[0];
-}
-function addDays(d, n) {
-  const r = new Date(d); r.setDate(r.getDate() + n); return r;
-}
+/* ══════════════════════════════════════════
+   ÉTAT GLOBAL
+══════════════════════════════════════════ */
+const DEFAULT_TASKS = [
+  { name: "Laver évier intérieur",                duration: 3,  location: "Cuisine" },
+  { name: "Laver îlot et plaque",                 duration: 7,  location: "Cuisine" },
+  { name: "Vider lave-vaisselle",                 duration: 4,  location: "Cuisine" },
+  { name: "Nettoyer filtre lave-vaisselle",       duration: 4,  location: "Cuisine" },
+  { name: "Préparer petit-déjeuner du lendemain", duration: 3,  location: "Cuisine" },
+  { name: "Lavabos",                              duration: 10, location: "Salle de bain" },
+  { name: "Vider bonde douche",                   duration: 10, location: "Salle de bain" },
+  { name: "Laver WC",                             duration: 5,  location: "WC" },
+  { name: "Aspirateur entrée et pièce principale",duration: 6,  location: "Salon" },
+  { name: "Miroir entrée",                        duration: 7,  location: "Entrée" },
+  { name: "Laver une voiture",                    duration: 25, location: "Extérieur" },
+  { name: "Étendre machine",                      duration: 10, location: "" },
+  { name: "Ranger linge",                         duration: 2,  location: "" },
+  { name: "Trier linge pour machine",             duration: 2,  location: "" },
+  { name: "Dépendre linge sec",                   duration: 5,  location: "" },
+];
 
-function isHidden(task) {
-  const r = recur[task.id];
-  if (!r || !r.nextDate) return false;
-  // Parse ISO date safely: "2026-02-19" → compare timestamps
-  const [y, m, d] = r.nextDate.split('-').map(Number);
-  const next = new Date(y, m - 1, d);
+let tasks        = loadTasks();
+let state        = loadState();
+let recur        = loadRecur();
+let editingId    = null;
+let snoozeTaskId = null;
+
+/* ══════════════════════════════════════════
+   LOGIQUE RÉCURRENCE
+══════════════════════════════════════════ */
+// Une tâche est cachée si elle a une nextDate dans le futur
+function isHidden(taskId) {
+  const entry = recur[String(taskId)];
+  if (!entry || !entry.nextDate) return false;
+  const next = parseDate(entry.nextDate);
   return next > today();
 }
 
-function daysUntil(task) {
-  const r = recur[task.id];
-  if (!r || !r.nextDate) return 0;
-  const [y, m, d] = r.nextDate.split('-').map(Number);
-  const next = new Date(y, m - 1, d);
-  return Math.max(0, Math.round((next - today()) / 86400000));
+// Nombre de jours avant réapparition
+function daysUntil(taskId) {
+  const entry = recur[String(taskId)];
+  if (!entry || !entry.nextDate) return 0;
+  const next = parseDate(entry.nextDate);
+  const diff = Math.round((next - today()) / 86400000);
+  return Math.max(0, diff);
 }
 
-let tasks = loadTasks();
-let state = loadState();
-let recur = loadRecur();
-let editingId = null;
-let snoozeTaskId = null;
-
-/* ─────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────── */
+/* ══════════════════════════════════════════
+   UTILITAIRES AFFICHAGE
+══════════════════════════════════════════ */
 function formatMin(m) {
   if (!m && m !== 0) return '—';
   if (m < 60) return m + ' min';
-  const h = Math.floor(m / 60), r = m % 60;
-  return r ? `${h}h${String(r).padStart(2,'0')}` : `${h}h`;
+  const h = Math.floor(m / 60), rem = m % 60;
+  return rem ? `${h}h${String(rem).padStart(2,'0')}` : `${h}h`;
 }
 
 function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function getLocations() {
-  const locs = [...new Set(tasks.map(t => t.location).filter(Boolean))];
-  return locs.sort();
+  return [...new Set(tasks.map(t => t.location).filter(Boolean))].sort();
 }
 
 function updateLocationSuggestions() {
-  const dl = document.getElementById('locationSuggestions');
-  dl.innerHTML = getLocations().map(l => `<option value="${escHtml(l)}">`).join('');
+  document.getElementById('locationSuggestions').innerHTML =
+    getLocations().map(l => `<option value="${escHtml(l)}">`).join('');
 }
 
-/* ─────────────────────────────────────────
+/* ══════════════════════════════════════════
    RENDER
-───────────────────────────────────────── */
+══════════════════════════════════════════ */
 function render() {
   const list = document.getElementById('taskList');
   list.innerHTML = '';
 
-  // Split: visible pending / hidden (snoozed/done recurring) / done daily
-  const pending = tasks.filter(t => !state[t.id] && !isHidden(t));
-  const hidden  = tasks.filter(t => !state[t.id] &&  isHidden(t));
-  const done    = tasks.filter(t =>  state[t.id]);
+  const pending  = tasks.filter(t => !state[t.id] && !isHidden(t.id));
+  const snoozed  = tasks.filter(t => !state[t.id] &&  isHidden(t.id));
+  const done     = tasks.filter(t =>  state[t.id]);
 
-  // Group pending by location
-  const groups = {};
-  const noLoc  = [];
+  // Pending — groupé par lieu
+  const groups = {}, noLoc = [];
   pending.forEach(t => {
     if (t.location) {
       if (!groups[t.location]) groups[t.location] = [];
@@ -433,65 +466,60 @@ function render() {
     }
   });
 
-  // Render pending grouped
-  const sortedLocs = Object.keys(groups).sort();
-  sortedLocs.forEach(loc => {
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'location-group';
-    const label = document.createElement('div');
-    label.className = 'location-label';
-    label.textContent = loc;
-    groupDiv.appendChild(label);
-    groups[loc].forEach(t => groupDiv.appendChild(makeTaskEl(t)));
-    list.appendChild(groupDiv);
+  Object.keys(groups).sort().forEach(loc => {
+    const g = makeGroup(loc);
+    groups[loc].forEach(t => g.appendChild(makeTaskEl(t, false)));
+    list.appendChild(g);
   });
-  noLoc.forEach(t => list.appendChild(makeTaskEl(t)));
+  noLoc.forEach(t => list.appendChild(makeTaskEl(t, false)));
 
-  // Render done tasks at bottom
+  // Terminées
   if (done.length > 0) {
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'location-group';
-    const label = document.createElement('div');
-    label.className = 'location-label';
-    label.textContent = '✓ Terminées';
-    groupDiv.appendChild(label);
-    done.forEach(t => groupDiv.appendChild(makeTaskEl(t)));
-    list.appendChild(groupDiv);
+    const g = makeGroup('✓ Terminées');
+    done.forEach(t => g.appendChild(makeTaskEl(t, false)));
+    list.appendChild(g);
   }
 
-  // Render hidden recurring tasks at very bottom
-  if (hidden.length > 0) {
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'location-group';
-    const label = document.createElement('div');
-    label.className = 'location-label';
-    label.textContent = '⏳ À venir';
-    groupDiv.appendChild(label);
-    hidden.forEach(t => groupDiv.appendChild(makeTaskEl(t, true)));
-    list.appendChild(groupDiv);
+  // À venir (snoozées / récurrentes validées)
+  if (snoozed.length > 0) {
+    const g = makeGroup('⏳ À venir');
+    snoozed.forEach(t => g.appendChild(makeTaskEl(t, true)));
+    list.appendChild(g);
   }
 
   updateStats();
   updateLocationSuggestions();
-
 }
 
-function makeTaskEl(task, hidden = false) {
+function makeGroup(label) {
+  const g = document.createElement('div');
+  g.className = 'location-group';
+  const l = document.createElement('div');
+  l.className = 'location-label';
+  l.textContent = label;
+  g.appendChild(l);
+  return g;
+}
+
+function makeTaskEl(task, hidden) {
   const done = !!state[task.id];
-  const div = document.createElement('div');
+  const div  = document.createElement('div');
   div.className = 'task-item' + (done ? ' done' : '') + (hidden ? ' task-hidden' : '');
   div.dataset.id = task.id;
 
   const recurBadge = task.recurrence
-    ? `<span class="recur-badge">🔁 ${hidden ? daysUntil(task) + 'j' : task.recurrence + 'j'}</span>`
-    : '';
+    ? `<span class="recur-badge">🔁 ${hidden ? daysUntil(task.id) + 'j' : task.recurrence + 'j'}</span>`
+    : (hidden ? `<span class="recur-badge">⏭ ${daysUntil(task.id)}j</span>` : '');
 
   const snoozeBtn = (!done && !hidden && task.recurrence)
     ? `<button class="task-btn" onclick="openSnoozeModal(${task.id})" title="Repousser">⏭️</button>`
     : '';
 
   div.innerHTML = `
-    <div class="reorder-btns"><button class="reorder-btn" onclick="moveTask(${task.id},-1)">▲</button><button class="reorder-btn" onclick="moveTask(${task.id},1)">▼</button></div>
+    <div class="reorder-btns">
+      <button class="reorder-btn" onclick="moveTask(${task.id},-1)">▲</button>
+      <button class="reorder-btn" onclick="moveTask(${task.id},1)">▼</button>
+    </div>
     <div class="checkbox" onclick="toggle(${task.id})"><span class="checkmark">✓</span></div>
     <div class="task-content">
       <div class="task-name">${escHtml(task.name)}</div>
@@ -509,61 +537,204 @@ function makeTaskEl(task, hidden = false) {
   return div;
 }
 
-/* ─────────────────────────────────────────
+/* ══════════════════════════════════════════
    STATS
-───────────────────────────────────────── */
+══════════════════════════════════════════ */
 function updateStats() {
-  const total    = tasks.length;
-  const totalMin = tasks.reduce((s, t) => s + t.duration, 0);
-  const doneCount = tasks.filter(t => state[t.id]).length;
-  const doneMin  = tasks.reduce((s, t) => s + (state[t.id] ? t.duration : 0), 0);
-  const pct      = total === 0 ? 0 : Math.round(doneCount / total * 100);
+  const total     = tasks.length;
+  const totalMin  = tasks.reduce((s, t) => s + t.duration, 0);
+  const doneCount = tasks.filter(t => !!state[t.id]).length;
+  const doneMin   = tasks.reduce((s, t) => s + (state[t.id] ? t.duration : 0), 0);
+  const pct       = total === 0 ? 0 : Math.round(doneCount / total * 100);
 
-  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressFill').style.width  = pct + '%';
   document.getElementById('progressLabel').textContent = pct + '%';
-  document.getElementById('totalTime').textContent  = formatMin(totalMin);
-  document.getElementById('doneTime').textContent   = formatMin(doneMin);
-  document.getElementById('remainTime').textContent = formatMin(totalMin - doneMin);
-  document.getElementById('sumDone').textContent    = doneCount;
-  document.getElementById('sumRemain').textContent  = total - doneCount;
-  document.getElementById('sumTotal').textContent   = total;
+  document.getElementById('totalTime').textContent     = formatMin(totalMin);
+  document.getElementById('doneTime').textContent      = formatMin(doneMin);
+  document.getElementById('remainTime').textContent    = formatMin(totalMin - doneMin);
+  document.getElementById('sumDone').textContent       = doneCount;
+  document.getElementById('sumRemain').textContent     = total - doneCount;
+  document.getElementById('sumTotal').textContent      = total;
 }
 
-/* ─────────────────────────────────────────
-   TOGGLE + CONFETTI
-───────────────────────────────────────── */
+/* ══════════════════════════════════════════
+   ACTIONS SUR LES TÂCHES
+══════════════════════════════════════════ */
 function toggle(id) {
   const task = tasks.find(t => t.id === id);
   if (!task) return;
-  const wasUndone = !state[id];
+  const key = String(id);
 
-  if (task.recurrence && wasUndone) {
-    // Recurring task: don't mark as done in state, just set nextDate
+  if (task.recurrence && !state[id]) {
+    // Tâche récurrente cochée → planifier réapparition
     const next = addDays(today(), task.recurrence);
-    recur[id] = { doneDate: dateKey(today()), nextDate: dateKey(next) };
+    recur[key] = { nextDate: dateKey(next) };
     saveRecur();
     launchConfetti();
     render();
     return;
   }
 
-  // Non-recurring or un-toggling
+  // Tâche non récurrente : toggle normal
   state[id] = !state[id];
   saveState();
   render();
-  if (wasUndone) launchConfetti();
+  if (state[id]) launchConfetti();
 
-  const visibleTasks = tasks.filter(t => !isHidden(t));
+  const visibleTasks = tasks.filter(t => !isHidden(t.id));
   if (visibleTasks.length > 0 && visibleTasks.every(t => state[t.id])) {
     setTimeout(() => document.getElementById('allDone').classList.add('show'), 600);
   }
 }
 
-/* ─────────────────────────────────────────
+function moveTask(id, dir) {
+  const idx = tasks.findIndex(t => t.id === id);
+  if (idx === -1) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= tasks.length) return;
+  const [moved] = tasks.splice(idx, 1);
+  tasks.splice(newIdx, 0, moved);
+  saveTasks();
+  render();
+}
+
+function deleteTask(id) {
+  if (!confirm('Supprimer cette tâche définitivement ?')) return;
+  tasks = tasks.filter(t => t.id !== id);
+  delete state[id];
+  delete recur[String(id)];
+  saveTasks(); saveState(); saveRecur();
+  render();
+}
+
+function resetAll() {
+  // confirm() peut être silencieux en mode PWA iOS — on utilise une modale custom
+  document.getElementById('resetOverlay').classList.add('show');
+}
+
+function confirmReset() {
+  document.getElementById('resetOverlay').classList.remove('show');
+  state = {};
+  recur = {};
+  // Double sécurité : on écrit directement dans localStorage
+  localStorage.setItem(STATE_KEY, '{}');
+  localStorage.setItem(RECUR_KEY, '{}');
+  render();
+}
+
+function cancelReset() {
+  document.getElementById('resetOverlay').classList.remove('show');
+}
+
+/* ══════════════════════════════════════════
+   MODALE SNOOZE
+══════════════════════════════════════════ */
+function openSnoozeModal(id) {
+  snoozeTaskId = id;
+  const task = tasks.find(t => t.id === id);
+  document.getElementById('snoozeDefault').value = task.snoozeDefault || 3;
+  document.getElementById('snoozeSetDefault').checked = false;
+  document.getElementById('snoozeOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('snoozeDefault').focus(), 300);
+}
+
+function closeSnoozeModal() {
+  document.getElementById('snoozeOverlay').classList.remove('show');
+  snoozeTaskId = null;
+}
+
+function confirmSnooze() {
+  const days = parseInt(document.getElementById('snoozeDefault').value);
+  if (!days || days < 1) return;
+  const task = tasks.find(t => t.id === snoozeTaskId);
+  if (!task) return;
+
+  if (document.getElementById('snoozeSetDefault').checked) {
+    task.snoozeDefault = days;
+    saveTasks();
+  }
+
+  const next = addDays(today(), days);
+  recur[String(snoozeTaskId)] = { nextDate: dateKey(next) };
+  saveRecur();
+  closeSnoozeModal();
+  render();
+}
+
+/* ══════════════════════════════════════════
+   MODALE AJOUT / ÉDITION
+══════════════════════════════════════════ */
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent    = 'Nouvelle tâche';
+  document.getElementById('inputName').value           = '';
+  document.getElementById('inputDuration').value       = '';
+  document.getElementById('inputLocation').value       = '';
+  document.getElementById('inputRecurrence').value     = '';
+  document.getElementById('inputSnoozeDefault').value  = '3';
+  document.getElementById('modalOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('inputName').focus(), 350);
+}
+
+function openEditModal(id) {
+  editingId = id;
+  const task = tasks.find(t => t.id === id);
+  document.getElementById('modalTitle').textContent    = 'Modifier la tâche';
+  document.getElementById('inputName').value           = task.name;
+  document.getElementById('inputDuration').value       = task.duration;
+  document.getElementById('inputLocation').value       = task.location       || '';
+  document.getElementById('inputRecurrence').value     = task.recurrence     || '';
+  document.getElementById('inputSnoozeDefault').value  = task.snoozeDefault  || 3;
+  document.getElementById('modalOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('inputName').focus(), 350);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  editingId = null;
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function saveTask() {
+  const name          = document.getElementById('inputName').value.trim();
+  const duration      = parseInt(document.getElementById('inputDuration').value);
+  const location      = document.getElementById('inputLocation').value.trim();
+  const recurrence    = parseInt(document.getElementById('inputRecurrence').value)    || null;
+  const snoozeDefault = parseInt(document.getElementById('inputSnoozeDefault').value) || 3;
+
+  if (!name)               { document.getElementById('inputName').focus();     return; }
+  if (!duration || duration < 1) { document.getElementById('inputDuration').focus(); return; }
+
+  if (editingId !== null) {
+    const task = tasks.find(t => t.id === editingId);
+    if (task) {
+      task.name = name; task.duration = duration; task.location = location;
+      task.recurrence = recurrence; task.snoozeDefault = snoozeDefault;
+    }
+  } else {
+    tasks.push({ id: Date.now(), name, duration, location, recurrence, snoozeDefault });
+  }
+
+  saveTasks(); closeModal(); render();
+}
+
+/* ══════════════════════════════════════════
+   SIRI
+══════════════════════════════════════════ */
+function addReminder(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  window.location.href = `shortcuts://run-shortcut?name=Ajouter%20rappel%20m%C3%A9nage&input=text&text=${encodeURIComponent(task.name)}`;
+}
+
+/* ══════════════════════════════════════════
    CONFETTI
-───────────────────────────────────────── */
+══════════════════════════════════════════ */
 const canvas = document.getElementById('confetti-canvas');
-const ctx = canvas.getContext('2d');
+const ctx    = canvas.getContext('2d');
 let confettiParticles = [];
 let animFrame = null;
 
@@ -609,140 +780,13 @@ function animateConfetti() {
   }
 }
 
-/* ─────────────────────────────────────────
-   SIRI REMINDER
-───────────────────────────────────────── */
-function addReminder(id) {
-  const task = tasks.find(t => t.id === id);
-  if (!task) return;
-  const name = encodeURIComponent(task.name);
-  // Calls the Siri Shortcut named "Ajouter rappel ménage" with the task name as input
-  window.location.href = `shortcuts://run-shortcut?name=Ajouter%20rappel%20m%C3%A9nage&input=text&text=${name}`;
-}
-
-/* ─────────────────────────────────────────
-   CRUD
-───────────────────────────────────────── */
-
-function moveTask(id, dir) {
-  const idx = tasks.findIndex(t => t.id === id);
-  if (idx === -1) return;
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= tasks.length) return;
-  const [moved] = tasks.splice(idx, 1);
-  tasks.splice(newIdx, 0, moved);
-  saveTasks();
-  render();
-}
-
-function openSnoozeModal(id) {
-  snoozeTaskId = id;
-  const task = tasks.find(t => t.id === id);
-  document.getElementById('snoozeDefault').value = task.snoozeDefault || 3;
-  document.getElementById('snoozeOverlay').classList.add('show');
-  setTimeout(() => document.getElementById('snoozeDefault').focus(), 300);
-}
-
-function closeSnoozeModal() {
-  document.getElementById('snoozeOverlay').classList.remove('show');
-  snoozeTaskId = null;
-}
-
-function confirmSnooze() {
-  const days = parseInt(document.getElementById('snoozeDefault').value);
-  if (!days || days < 1) return;
-  const task = tasks.find(t => t.id === snoozeTaskId);
-  if (!task) return;
-  // Optionally save as new default
-  if (document.getElementById('snoozeSetDefault').checked) {
-    task.snoozeDefault = days;
-    saveTasks();
-  }
-  const next = addDays(today(), days);
-  recur[snoozeTaskId] = { snoozed: true, nextDate: dateKey(next) };
-  saveRecur();
-  closeSnoozeModal();
-  render();
-}
-
-function deleteTask(id) {
-  if (!confirm('Supprimer cette tâche définitivement ?')) return;
-  tasks = tasks.filter(t => t.id !== id);
-  delete state[id];
-  saveTasks(); saveState(); render();
-}
-
-function openAddModal() {
-  editingId = null;
-  document.getElementById('modalTitle').textContent = 'Nouvelle tâche';
-  document.getElementById('inputName').value = '';
-  document.getElementById('inputDuration').value = '';
-  document.getElementById('inputLocation').value = '';
-  document.getElementById('inputRecurrence').value = '';
-  document.getElementById('inputSnoozeDefault').value = '3';
-  document.getElementById('modalOverlay').classList.add('show');
-  setTimeout(() => document.getElementById('inputName').focus(), 350);
-}
-
-function openEditModal(id) {
-  editingId = id;
-  const task = tasks.find(t => t.id === id);
-  document.getElementById('modalTitle').textContent = 'Modifier la tâche';
-  document.getElementById('inputName').value = task.name;
-  document.getElementById('inputDuration').value = task.duration;
-  document.getElementById('inputLocation').value = task.location || '';
-  document.getElementById('inputRecurrence').value = task.recurrence || '';
-  document.getElementById('inputSnoozeDefault').value = task.snoozeDefault || 3;
-  document.getElementById('modalOverlay').classList.add('show');
-  setTimeout(() => document.getElementById('inputName').focus(), 350);
-}
-
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('show');
-  editingId = null;
-}
-
-function handleOverlayClick(e) {
-  if (e.target === document.getElementById('modalOverlay')) closeModal();
-}
-
-function saveTask() {
-  const name          = document.getElementById('inputName').value.trim();
-  const duration      = parseInt(document.getElementById('inputDuration').value);
-  const location      = document.getElementById('inputLocation').value.trim();
-  const recurrence    = parseInt(document.getElementById('inputRecurrence').value) || null;
-  const snoozeDefault = parseInt(document.getElementById('inputSnoozeDefault').value) || 3;
-
-  if (!name)              { document.getElementById('inputName').focus(); return; }
-  if (!duration || duration < 1) { document.getElementById('inputDuration').focus(); return; }
-
-  if (editingId !== null) {
-    const task = tasks.find(t => t.id === editingId);
-    if (task) { task.name = name; task.duration = duration; task.location = location; task.recurrence = recurrence; task.snoozeDefault = snoozeDefault; }
-  } else {
-    tasks.push({ id: Date.now(), name, duration, location, recurrence, snoozeDefault });
-  }
-
-  saveTasks(); closeModal(); render();
-}
-
-function resetAll() {
-  if (!confirm('Réinitialiser toutes les tâches ?')) return;
-  state = {}; saveState();
-  recur = {}; saveRecur();
-  render();
-}
-
-
-
-
-
-
-/* ─────────────────────────────────────────
+/* ══════════════════════════════════════════
    INIT
-───────────────────────────────────────── */
+══════════════════════════════════════════ */
 const d = new Date();
-document.getElementById('dateLabel').textContent = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+document.getElementById('dateLabel').textContent = d.toLocaleDateString('fr-FR', {
+  weekday: 'long', day: 'numeric', month: 'long'
+});
 render();
 </script>
 </body>
